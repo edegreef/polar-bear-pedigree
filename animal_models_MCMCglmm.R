@@ -3,7 +3,7 @@
 # Help from tutorial: https://juliengamartin.github.io/wam_tuto/mcmcglmm-1.html #Looks like site no longer available..
 # Now using help from this one: https://devillemereuil.legtux.org/wp-content/uploads/2012/12/tuto_en.pdf
 
-### Script below is not elegant and parts are not efficient. Will clean up script soon!
+### Some parts of the script is not super efficient, but it works- will clean up soon.
 
 library(MCMCglmm)
 library(tidyverse) 
