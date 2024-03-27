@@ -1,4 +1,4 @@
-![polar-bear-git](https://github.com/edegreef/polar-bear-pedigree/assets/49288304/43c3415b-3a7e-4e96-8541-a067e0701066)
+![polar-bear-git](https://github.com/edegreef/polar-bear-pedigree/assets/49288304/f5c06889-b3c7-4749-a950-8ef81bed0ed5)
 This repository contained scripts used in creating a pedigree for the western Hudson Bay polar bear population, using data collected by Environment Climate Change Canada (ECCC)
 
 ### Scripts
