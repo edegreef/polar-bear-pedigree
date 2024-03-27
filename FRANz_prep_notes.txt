@@ -1,0 +1,106 @@
+####### Notes on running FRANz on linux
+
+# FRANz Installation
+# Downloaded FRANz-2.0.0.tar.gz from http://sourceforge.net/projects/franzpedigree/files/
+
+# Unpack and configure
+tar xvfz FRANz-2.0.0.tar.gz
+cd FRANz-2.0.0
+./configure
+make check
+sudo make install
+
+# Check if opening tutorial in program works
+man FRANz
+
+# Remove the tar.gz file
+cd ..
+rm FRANz-2.0.0.tar.gz
+
+# Test out program, playing with the examples on FRANz
+#----------------- FRANz example
+cd /home/degreefe/polarbear/franz/FRANz-2.0.0/examples/penaeus_monodon
+
+FRANz --pedigreeincheck ../input/penaeus_monodon.pedigree \
+   ../input/penaeus_monodon.dat --Nmax 50 --poutformat 1,2 --ignoreage --fullsibtest  \
+   --updatefreqs --maxdepth 3
+
+# Or if we want to use age data:
+
+FRANz --pedigreeincheck ../input/penaeus_monodon.pedigree ../input/penaeus_monodon.dat  \
+   --Nmax 50 --femrepro 1:1 --malerepro 1:1 --poutformat 1,2 --fullsibtest --updatefreqs 
+   
+# Test run
+FRANz --pedigreeincheck penaeus_monodon.pedigree penaeus_monodon.dat --Nmax 50 --poutformat 1,2 --ignoreage --fullsibtest --updatefreqs --maxdepth 3
+
+#------------------
+
+####### Moving on to proper set up
+
+###### INPUT FILE FORMAT
+
+# Manual says there is a conversion from csv to proper input file format on their website
+# Website file upload takes too long, so will use csv.pl script (located in /FRANz-2.0.0/extras/input)
+
+# Error, need to install Text:CSV_pm
+perl -MCPAN -e'install Text::CSV'
+
+# The test file from online works
+perl csv.pl --in test.csv > test
+
+# Using polar bear data
+# Make sure that the .csv file is in Unix (LF) instead of (CR LF).
+perl csv.pl --in Micros_and_field_dataset.csv --birth_col 1 --death_col 2 --sex_col 3 --data_col 4 --has_header > Micros_and_field_dataset.dat
+
+# Not sure why the death years are not going through. Can work on figuring out a better way to do this but for now since it's just a 10 going to manually add it in.
+
+# Format the subpedigree - need to make sure it fits the 10 character thingy. Here, I will use the files I created from the microsats and metadata in R ("inds_list_all.txt" and "mom_cub_pairs_nodups.txt") and reformat it here.
+
+# Add the 4 blank spaces to left
+sed 's/^/    /' inds_list_all.txt > inds_list_formated.txt
+
+# Mom-cub one more steps because 2 columns
+awk '{print $1}' mom_cub_pairs_nodups.txt > mom_cub_pairs_col1.txt 
+sed 's/^/    /' mom_cub_pairs_col1.txt > mom_cub_pairs_col1_formated.txt
+awk '{print $2}' mom_cub_pairs_nodups.txt > mom_cub_pairs_col2.txt
+sed 's/^/    /' mom_cub_pairs_col2.txt > mom_cub_pairs_col2_formated.txt
+paste -d'\0' mom_cub_pairs_col1_formated.txt mom_cub_pairs_col2_formated.txt > mom_cub_pairs_formated_nodups.txt
+
+# Paste rows
+cat inds_list_formated.txt mom_cub_pairs_formated_nodups.txt > mom_cub_subpedigree.txt
+
+# Remember to manually add "4127" as first row (total number of samples)
+
+# Remove/clean up some of the files
+rm mom_cub_pairs_col1.txt mom_cub_pairs_col1_formated.txt mom_cub_pairs_col2.txt mom_cub_pairs_col2_formated.txt inds_list_formated.txt mom_cub_pairs_formated.txt
+
+###### RUNNING FRANZ
+
+# Settings want to use::
+--femrepro 2:32 
+--malerepro 2:32 
+--Nfmax 5000 
+--Nmmax 5000 
+--simiter 1000000 
+--samaxiter 1000000000 
+--mhburniniter 5000000 
+--mhiter 30000000 
+--mhsamplefreq 100 
+--pedigreein mom_cub_subpedigree.txt 
+--pedigreeoutformat 3 
+--poutformat 2
+
+# Looks like there are duplicate pair entries in the subpedigree and FRANz dont like (maybe from entries that had multiple COY which I turned into single column so then dups. Removed dups in R and now seems to work.
+# Run FRANz (took under an hour to run this set)
+FRANz Micros_and_field_dataset.dat --femrepro 2:32 --malerepro 2:32 --Nfmax 5000 --Nmmax 5000 --simiter 1000000 --samaxiter 1000000000 --mhburniniter 5000000 --mhiter 30000000 --mhsamplefreq 100 --pedigreein mom_cub_subpedigree_nodups.txt --pedigreeoutformat 3 --poutformat 2
+
+# Yay it works now
+# Put results in "with_adopt" folder
+# Manually remove the 15 pairs from subpedigree that had "many mismatches" - these are putative adoptive pairs or genotyping errors, save as "mom_cub_subpedigree_noadopt.txt" and move this subpedigree to other folder "without_adopt".
+
+# Go to "without_adopt" folder and use same .dat input file but with updated subpedigree
+# Rerun FRANz
+FRANz Micros_and_field_dataset.dat --femrepro 2:32 --malerepro 2:32 --Nfmax 5000 --Nmmax 5000 --simiter 1000000 --samaxiter 1000000000 --mhburniniter 5000000 --mhiter 30000000 --mhsamplefreq 100 --pedigreein mom_cub_subpedigree_noadopt.txt --pedigreeoutformat 3 --poutformat 2
+
+# Now use R or other programs to look at results
+# Also use FRANz manual to interpret outputs
